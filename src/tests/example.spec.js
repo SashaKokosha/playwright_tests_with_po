@@ -1,10 +1,13 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/base';
+import { LoginPage } from '../pages/Login.page';
 
 test.describe('Saucedemo app basic tests', () => {
     test('should login successfully', async (
-        /** @type {{ app: import('../pages/Application').Application }} */{ app },
+        /** @type {{ app: import('../pages/Application').Application }} */{ app, page },
     ) => {
+        const login = new LoginPage(page);
+        await login.navigate ();
         await app.login.navigate();
         await app.login.performLogin('standard_user', 'secret_sauce');
 

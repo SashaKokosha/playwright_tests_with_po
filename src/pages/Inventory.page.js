@@ -9,6 +9,10 @@ export class InventoryPage extends BaseSwagLabPage {
 
     addItemToCartButton = this.page.locator('[id^="add-to-cart"]');
 
+    async sortBy(sortOption) {
+        await this.page.locator('[data-test="product-sort-container"]').selectOption(sortOption);
+    }
+
     async addItemToCartById(id) {
         await this.addItemToCartButton.nth(id).click();
     }

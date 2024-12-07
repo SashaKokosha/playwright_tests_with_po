@@ -1,27 +1,45 @@
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../pages/Login.page';
+import { test, expect } from '../fixtures/base';
 import { InventoryPage } from '../pages/Inventory.page';
-import { ShoppingCartPage } from '../pages/ShoppingCart.page';
 
-test('Perform and verify sorting on the Inventory page', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-    const inventoryPage = new InventoryPage(page);
+const sortBy = async (sortOption, page) => {
+    const sortContainer = page.locator('[data-test="product-sort-container"]');
+    await sortContainer.selectOption(sortOption);
+};
 
-    // Логін
-    await page.goto('https://www.saucedemo.com/');
-    await loginPage.performLogin('standard_user', 'secret_sauce');
+test.describe('Inventory sorting', () => {
+    const sortingOptions = [
+        { value: 'az', description: 'Sort by name: A to Z' },
+        { value: 'za', description: 'Sort by name: Z to A' },
+        { value: 'lohi', description: 'Sort by price: low to high' },
+        { value: 'hilo', description: 'Sort by price: high to low' },
+    ];
 
-    // Перевірка, що ми на сторінці Inventory
-    expect(await inventoryPage.headerTitle.textContent()).toBe('Products');
+    for (const { value, description } of sortingOptions) {
+        test(description, async ({ app, page }) => {
+            const inventoryPage = new InventoryPage(page);
 
-    // Виконати сортування (наприклад, за ціною)
-    const sortDropdown = page.locator('.product_sort_container');
-    await sortDropdown.selectOption('lohi'); // сортування за ціною (low to high)
+            await app.login.navigate();
+            await app.login.performLogin('standard_user', 'secret_sauce');
 
-    // Отримати всі ціни після сортування
-    const prices = await page.locator('.inventory_item_price').allTextContents();
-    const sortedPrices = [...prices].sort((a, b) => parseFloat(a) - parseFloat(b));
+            await inventoryPage.sortBy(value);
 
-    // Перевірка: ціни мають бути відсортовані
-    expect(prices).toEqual(sortedPrices);
+            if (value === 'az' || value === 'za') {
+                const itemNames = await inventoryPage.getItemNames();
+                const isSorted =
+                    value === 'az'
+                        ? itemNames.every((name, i) => i === 0 || name.localeCompare(itemNames[i - 1]) >= 0)
+                        : itemNames.every((name, i) => i === 0 || name.localeCompare(itemNames[i - 1]) <= 0);
+                expect(isSorted).toBeTruthy();
+            } else {
+                // Validate price sorting
+                const prices = await inventoryPage.getPrices();
+                const numericPrices = prices.map(price => parseFloat(price.replace('$', '')));
+                const isSorted =
+                    value === 'lohi'
+                        ? numericPrices.every((price, i) => i === 0 || price >= numericPrices[i - 1])
+                        : numericPrices.every((price, i) => i === 0 || price <= numericPrices[i - 1]);
+                expect(isSorted).toBeTruthy();
+            }
+        });
+    }
 });

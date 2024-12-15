@@ -1,5 +1,6 @@
-import { test, expect } from '../fixtures/base';
+import { test } from '../fixtures/base';
 import { InventoryPage } from '../pages/Inventory.page';
+import { expect } from '@playwright/test';
 
 const sortBy = async (sortOption, page) => {
     const sortContainer = page.locator('[data-test="product-sort-container"]');
@@ -24,14 +25,13 @@ test.describe('Inventory sorting', () => {
             await inventoryPage.sortBy(value);
 
             if (value === 'az' || value === 'za') {
-                const itemNames = await inventoryPage.getItemNames();
+                const itemNames = await inventoryPage.getItemNames();               
                 const isSorted =
                     value === 'az'
                         ? itemNames.every((name, i) => i === 0 || name.localeCompare(itemNames[i - 1]) >= 0)
                         : itemNames.every((name, i) => i === 0 || name.localeCompare(itemNames[i - 1]) <= 0);
                 expect(isSorted).toBeTruthy();
             } else {
-                // Validate price sorting
                 const prices = await inventoryPage.getPrices();
                 const numericPrices = prices.map(price => parseFloat(price.replace('$', '')));
                 const isSorted =
